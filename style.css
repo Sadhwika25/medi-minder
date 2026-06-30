@@ -343,6 +343,124 @@ body {
   opacity: 1;
 }
 
+/* =========================================================
+   Auth Screen (Login / Sign Up)
+   ========================================================= */
+#authContainer.app-container {
+  text-align: center;
+  margin-top: 10vh;
+}
+
+#authContainer > h1 {
+  display: inline-block;
+}
+
+#authContainer .subtitle {
+  text-align: center;
+}
+
+#authContainer .input-group {
+  margin-top: 24px;
+  text-align: left;
+}
+
+#authContainer input[type="email"],
+#authContainer input[type="password"] {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-input);
+  font-size: var(--font-size-base);
+  font-family: var(--font-body);
+  color: var(--clr-text);
+  background: var(--clr-bg);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#authContainer input[type="email"]::placeholder,
+#authContainer input[type="password"]::placeholder {
+  color: var(--clr-muted);
+}
+
+#authContainer input:focus {
+  border-color: var(--clr-primary);
+  box-shadow: var(--shadow-focus);
+  background: #fff;
+}
+
+/* Primary action: Sign Up — solid teal, matches .btn-add */
+.btn-auth-primary {
+  width: 100%;
+  padding: 15px 20px;
+  background: var(--clr-primary);
+  color: #fff;
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  font-family: var(--font-body);
+  border: none;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 4px 14px rgba(26,140,130,0.30);
+}
+
+.btn-auth-primary:hover {
+  background: var(--clr-primary-dk);
+  box-shadow: 0 6px 18px rgba(26,140,130,0.38);
+}
+
+.btn-auth-primary:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(26,140,130,0.20);
+}
+
+.btn-auth-primary:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Secondary action: Login — outlined, teal text, amber-tinted hover */
+.btn-auth-secondary {
+  width: 100%;
+  padding: 14px 20px;
+  margin-top: 4px;
+  background: transparent;
+  color: var(--clr-primary);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  font-family: var(--font-body);
+  border: 1.5px solid var(--clr-primary);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.btn-auth-secondary:hover {
+  background: var(--clr-taken-bg);
+}
+
+.btn-auth-secondary:active {
+  transform: scale(0.97);
+}
+
+.btn-auth-secondary:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.auth-hint {
+  margin-top: 16px;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--clr-muted);
+  letter-spacing: 0.02em;
+}
+
 /* --- Responsive: Tablet (480–768px) --- */
 @media (min-width: 480px) {
   body {
@@ -379,6 +497,14 @@ body {
 
   .btn-add {
     grid-column: 1 / -1;
+  }
+
+  #authContainer.app-container {
+    margin-top: 0;
+  }
+
+  #authContainer .input-group {
+    display: flex;
   }
 }
 
@@ -417,6 +543,20 @@ body {
 
   .input-group input:focus {
     background: #182830;
+  }
+
+  #authContainer input[type="email"],
+  #authContainer input[type="password"] {
+    background: #0F1E22;
+    color: var(--clr-text);
+  }
+
+  #authContainer input:focus {
+    background: #182830;
+  }
+
+  .btn-auth-secondary:hover {
+    background: rgba(26,140,130,0.18);
   }
 }
 
