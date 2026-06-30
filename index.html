@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Medi-Minder</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+
+    <!-- Initialize Firebase -->
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyAgpOQC70HYv9a7lQB6OxBc6Bd5oYPXNUE",
+          authDomain: "medi-minder-app-cffa9.firebaseapp.com",
+          databaseURL: "https://medi-minder-app-cffa9-default-rtdb.firebaseio.com",
+          projectId: "medi-minder-app-cffa9",
+          storageBucket: "medi-minder-app-cffa9.firebasestorage.app",
+          messagingSenderId: "1050980841512",
+          appId: "1:1050980841512:web:ee8b5a4811cbc79d119d1d",
+          measurementId: "G-90CYTT2HCK"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
+
+</head>
+<body>
+    <div class="app-container">
+        <h1>💊 Medi-Minder</h1>
+        <p class="subtitle">Never miss a dose again.</p>
+
+        <!-- FORM -->
+        <div class="input-group">
+            <input type="text" id="medicineName" placeholder="Medicine name (e.g. Insulin)" />
+            
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="time" id="medicineTime" value="08:00" style="flex: 1;" />
+                <button onclick="addTimeSlot()" style="padding: 16px 18px; border: none; border-radius: 16px; background: #2a3140; color: #4facfe; font-weight: 700; cursor: pointer;">➕ Add Time</button>
+            </div>
+            
+            <div id="timeSlotList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+                <span style="color: #2a3140; font-size: 14px;">No times added yet. Add a time above.</span>
+            </div>
+            
+            <button class="btn-add" onclick="saveMedicine()">➕ Add Reminder</button>
+        </div>
+
+        <!-- REMINDER LIST -->
+        <div class="section-title">📋 Your Reminders</div>
+        <div id="reminderList">
+            <div class="empty-state">
+                <p style="font-size: 48px; margin-bottom: 12px;">💊</p>
+                <p style="font-size: 16px; color: #8892a8;">No reminders added yet.</p>
+                <p style="font-size: 14px; color: #2a3140;">Add your first medicine above!</p>
+            </div>
+        </div>
+
+        <div class="footer-note">Tap ✏️ to edit • 🗑️ to delete</div>
+    </div>
+
+    <script>
+        // ============================================================
+        // SECTION 1: TIME SLOT MANAGEMENT
+        // ============================================================
+        let currentTimes = [];
+        let editingId = null;
+
+        function addTimeSlot() {
+            const timeInput = document.getElementById('medicineTime');
+            const time = timeInput.value;
+            
+            if (!time) {
+                alert('Please select a time!');
+                return;
+            }
+            
+            if (currentTimes.includes(time)) {
+                alert('This time is already added!');
+                return;
+            }
+            
+            currentTimes.push(time);
+            renderTimeSlots();
+            timeInput.value = '';
+        }
+
+        function renderTimeSlots() {
+            const container = document.getElementById('timeSlotList');
+            if (currentTimes.length === 0) {
+                container.innerHTML = '<span style="color: #2a3140; font-size: 14px;">No times added yet. Add a time above.</span>';
+                return;
+            }
+            
+            container.innerHTML = currentTimes.map((time, index) => {
+                const hour = parseInt(time.split(':')[0]);
+                const min = time.split(':')[1];
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour % 12 || 12;
+                return `
+                    <span style="background: #11161f; padding: 8px 14px; border-radius: 40px; font-size: 14px; border: 1px solid #2a3140; display: flex; align-items: center; gap: 8px;">
+                        ${displayHour}:${min} ${ampm}
+                        <span onclick="removeTimeSlot(${index})" style="cursor: pointer; color: #ff4757; font-weight: 700;">✕</span>
+                    </span>
+                `;
+            }).join('');
+        }
+
+        function removeTimeSlot(index) {
+            currentTimes.splice(index, 1);
+            renderTimeSlots();
+        }
+
+        // ============================================================
+        // FIREBASE STORAGE HELPERS (Replaces localStorage)
+        // ============================================================
+
+        // Fetches all medicines from Firebase
+        function getMedicines() {
+            // We'll change this to use a real-time listener later
+            // For now, we'll fetch data once.
+            return new Promise((resolve) => {
+                const medicinesRef = firebase.database().ref('medicines');
+                medicinesRef.once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // Firebase returns an object with keys. Convert to an array.
+                        const medicinesArray = Object.keys(data).map(key => ({
+                            id: parseInt(key), // Use the Firebase key as the ID
+                            ...data[key]
+                        }));
+                        resolve(medicinesArray);
+                    } else {
+                        resolve([]);
+                    }
+                });
+            });
+        }
+
+        // Saves the entire medicines list to Firebase
+        function saveMedicines(medicines) {
+            // Sanitize: Ensure every medicine has a lastTakenDate
+            const sanitizedMedicines = medicines.map(med => {
+                return {
+                    ...med,
+                    lastTakenDate: med.lastTakenDate !== undefined ? med.lastTakenDate : null,
+                    takenToday: med.takenToday !== undefined ? med.takenToday : false
+                };
+            });
+
+            // Convert array back to an object with keys as IDs
+            const medicinesObject = {};
+            sanitizedMedicines.forEach(med => {
+                medicinesObject[med.id] = {
+                    name: med.name,
+                    times: med.times,
+                    takenToday: med.takenToday,
+                    lastTakenDate: med.lastTakenDate
+                };
+            });
+            
+            return firebase.database().ref('medicines').set(medicinesObject);
+        }
+
+        // ============================================================
+        // SECTION 3: DELETE & EDIT FUNCTIONS
+        // ============================================================
+        async function deleteMedicine(id) {
+            if (!confirm('Are you sure you want to delete this medicine?')) return;
+            
+            const medicines = await getMedicines();
+            const filteredMedicines = medicines.filter(med => med.id !== id);
+            await saveMedicines(filteredMedicines);
+            renderReminderList();
+            if (editingId === id) cancelEdit();
+        }
+        
+        async function editMedicine(id) {
+            const medicines = await getMedicines();
+            const med = medicines.find(m => m.id === id);
+            if (!med) {
+                alert('Medicine not found!');
+                return;
+            }
+            editingId = id;
+            document.getElementById('medicineName').value = med.name;
+            currentTimes = [...med.times];
+            renderTimeSlots();
+            
+            const addBtn = document.querySelector('.btn-add');
+            addBtn.textContent = '💾 Update Reminder';
+            
+            let cancelBtn = document.getElementById('cancelEditBtn');
+            if (!cancelBtn) {
+                cancelBtn = document.createElement('button');
+                cancelBtn.id = 'cancelEditBtn';
+                cancelBtn.textContent = '❌ Cancel';
+                cancelBtn.style.cssText = 'padding: 12px; border: none; border-radius: 16px; background: #2a3140; color: #ff4757; font-weight: 700; cursor: pointer; margin-top: 8px; width: 100%;';
+                cancelBtn.onclick = cancelEdit;
+                document.querySelector('.input-group').appendChild(cancelBtn);
+            } else {
+                cancelBtn.style.display = 'block';
+            }
+            
+            document.querySelector('.app-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            currentTimes = [];
+            renderTimeSlots();
+            document.getElementById('medicineName').value = '';
+            document.getElementById('medicineTime').value = '08:00';
+            document.querySelector('.btn-add').textContent = '➕ Add Reminder';
+            
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) {
+                cancelBtn.style.display = 'none';
+            }
+        }
+
+        
+        // ============================================================
+        // RENDER REMINDER LIST (Now with real-time updates!)
+        // ============================================================
+        function renderReminderList() {
+            const container = document.getElementById('reminderList');
+            
+            // Set up a real-time listener
+            const medicinesRef = firebase.database().ref('medicines');
+            medicinesRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                let medicines = [];
+                
+                if (data) {
+                    // Convert Firebase object to an array
+                    medicines = Object.keys(data).map(key => ({
+                        id: parseInt(key),
+                        ...data[key]
+                    }));
+                }
+
+                // --- Your existing rendering logic starts here ---
+                if (medicines.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <p style="font-size: 48px; margin-bottom: 12px;">💊</p>
+                            <p style="font-size: 16px; color: #8892a8;">No reminders added yet.</p>
+                            <p style="font-size: 14px; color: #2a3140;">Add your first medicine above!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = medicines.map(med => {
+                    const timesDisplay = med.times.map(t => {
+                        const hour = parseInt(t.split(':')[0]);
+                        const min = t.split(':')[1];
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const displayHour = hour % 12 || 12;
+                        return `${displayHour}:${min} ${ampm}`;
+                    }).join(', ');
+                    
+                    return `
+                        <div class="reminder-item">
+                            <div class="reminder-info">
+                                <span class="reminder-name">${med.name}</span>
+                                <span class="reminder-time">${timesDisplay}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="status-badge">${med.takenToday ? '✅ Taken' : '⏳ Pending'}</span>
+                                <span onclick="editMedicine(${med.id})" style="cursor: pointer; color: #4facfe; font-size: 18px;">✏️</span>
+                                <span onclick="deleteMedicine(${med.id})" style="cursor: pointer; color: #ff4757; font-size: 18px;">🗑️</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        // ============================================================
+        // SECTION 5: SAVE MEDICINE (Create & Update)
+        // ============================================================
+        async function saveMedicine() {
+              const name = document.getElementById('medicineName').value.trim();
+              if (!name) {
+                  alert('Please enter a medicine name!');
+                  return;
+              }
+              if (currentTimes.length === 0) {
+                  alert('Please add at least one time for this medicine!');
+                  return;
+              }
+
+              const medicines = await getMedicines();
+              
+              if (editingId !== null) {
+                  const index = medicines.findIndex(m => m.id === editingId);
+                  if (index === -1) {
+                      alert('Error: Medicine not found!');
+                      cancelEdit();
+                      return;
+                  }
+                  medicines[index].name = name;
+                  medicines[index].times = [...currentTimes];
+                  await saveMedicines(medicines);
+                  cancelEdit();
+                  alert('✅ Medicine updated successfully!');
+              } else {
+                  const newMedicine = {
+                      id: Date.now(),
+                      name: name,
+                      times: [...currentTimes],
+                      takenToday: false,
+                      lastTakenDate: null
+                  };
+                  medicines.push(newMedicine);
+                  await saveMedicines(medicines);
+                  currentTimes = [];
+                  renderTimeSlots();
+                  document.getElementById('medicineName').value = '';
+                  document.getElementById('medicineTime').value = '08:00';
+                  alert(`✅ Reminder added for ${name} at ${newMedicine.times.length} time(s)!`);
+              }
+              
+              renderReminderList();
+          }
+
+        // ============================================================
+        // SECTION 6: DAILY RESET & SCHEDULER (NEW)
+        // ============================================================
+        let alarmInterval = null;
+
+        async function resetDailyStatus() {
+            const medicines = await getMedicines(); // <-- Added 'await'
+            const today = new Date().toISOString().split('T')[0];
+            let changed = false;
+
+            medicines.forEach(med => {
+                if (med.takenToday && med.lastTakenDate !== today) {
+                    med.takenToday = false;
+                    med.lastTakenDate = null;
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                await saveMedicines(medicines); // <-- Added 'await' here too
+                renderReminderList();
+            }
+        }
+
+        async function checkReminders() {
+            await resetDailyStatus(); // <-- Added 'await'
+
+            const medicines = await getMedicines(); // <-- Added 'await'
+            const now = new Date();
+            const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+            for (const med of medicines) {
+                if (med.takenToday) continue;
+                if (med.times.includes(currentTime)) {
+                    triggerAlert(med);
+                    return;
+                }
+            }
+        }
+
+        function triggerAlert(medicine) {
+            const overlay = document.getElementById('alarmOverlay');
+            overlay.style.display = 'flex';
+            document.getElementById('alarmMedicineName').textContent = medicine.name;
+
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 500]);
+
+            if (window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(`Urgent! Take ${medicine.name} now!`);
+                utterance.rate = 1.2;
+                utterance.pitch = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+
+            window.alertingMedicineId = medicine.id;
+
+            if (alarmInterval) clearInterval(alarmInterval);
+            alarmInterval = setInterval(() => {
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                if (window.speechSynthesis) {
+                    const utterance = new SpeechSynthesisUtterance(`Please take ${medicine.name} now!`);
+                    utterance.rate = 1.2;
+                    window.speechSynthesis.speak(utterance);
+                }
+            }, 30000);
+        }
+
+        async function takeMedicine() {
+            const id = window.alertingMedicineId;
+            if (!id) {
+                dismissAlert();
+                return;
+            }
+
+            const medicines = await getMedicines(); // <-- Added 'await' here
+            const med = medicines.find(m => m.id === id);
+            
+            if (med) {
+                med.takenToday = true;
+                med.lastTakenDate = new Date().toISOString().split('T')[0];
+                await saveMedicines(medicines); // <-- Added 'await' here too
+                renderReminderList();
+            }
+
+            dismissAlert();
+            alert(`✅ You took ${med ? med.name : 'your medicine'}! Good job! 💪`);
+        }
+
+        function dismissAlert() {
+            const overlay = document.getElementById('alarmOverlay');
+            overlay.style.display = 'none';
+            if (alarmInterval) {
+                clearInterval(alarmInterval);
+                alarmInterval = null;
+            }
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel(); // <-- Stop speaking immediately
+            }
+            window.alertingMedicineId = null;
+        }
+
+        function startScheduler() {
+            setInterval(checkReminders, 30000);
+            setTimeout(checkReminders, 1000);
+        }
+
+                // ============================================================
+        // SECTION 6.5: FIREBASE PUSH NOTIFICATIONS (NEW)
+        // ============================================================
+
+        // Function to request permission and get the FCM token
+        function requestNotificationPermission() {
+            console.log('Requesting notification permission...');
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    console.log('Notification permission granted.');
+                    getFCMPushToken();
+                } else {
+                    console.log('Unable to get permission to notify.');
+                }
+            });
+        }
+
+        // Function to get the FCM token
+        function getFCMPushToken() {
+            // Check if the browser supports service workers and the Push API
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                console.warn('Push notifications are not supported by this browser.');
+                return;
+            }
+
+            const messaging = firebase.messaging();
+
+            // Get the registration token
+            // !!! IMPORTANT: Replace 'YOUR_VAPID_KEY' with the key you generated !!!
+            messaging.getToken({ vapidKey: 'BIISWndTkZ9XHt_eCadIQ0sbuRSq6XOb9Q0lVXwxgQ-soqUR9vG6AbWhVX9q8Izc2IbX1jH0Mn54_yeJPcy1Sbc' }).then((currentToken) => {
+                if (currentToken) {
+                    console.log('FCM Token:', currentToken);
+                    // Save the token to Firebase Database
+                    saveTokenToDatabase(currentToken);
+                } else {
+                    console.log('No registration token available. Request permission to generate one.');
+                }
+            }).catch((err) => {
+                console.log('An error occurred while retrieving token. ', err);
+            });
+        }
+
+        // Save the token to Firebase Database (so you can send notifications later)
+        function saveTokenToDatabase(token) {
+            firebase.database().ref('fcmTokens').push({
+                token: token,
+                userAgent: navigator.userAgent,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        // ============================================================
+        // SECTION 7: EXPOSE FUNCTIONS GLOBALLY
+        // ============================================================
+        window.getMedicines = getMedicines;
+        window.saveMedicines = saveMedicines;
+        window.renderReminderList = renderReminderList;
+        window.saveMedicine = saveMedicine;
+        window.addTimeSlot = addTimeSlot;
+        window.removeTimeSlot = removeTimeSlot;
+        window.editMedicine = editMedicine;
+        window.deleteMedicine = deleteMedicine;
+        window.cancelEdit = cancelEdit;
+        window.takeMedicine = takeMedicine;
+        window.dismissAlert = dismissAlert;
+        window.checkReminders = checkReminders;
+
+        // ============================================================
+        // SECTION 8: INITIALIZE APP
+        // ============================================================
+                // ============================================================
+        // SECTION 8: INITIALIZE APP
+        // ============================================================
+        renderReminderList();   
+        startScheduler();
+
+        // Request notification permission on page load
+        requestNotificationPermission();   
+    </script>
+        <!-- ============================================ -->
+    <!-- ALARM OVERLAY (Hidden by default)            -->
+    <!-- ============================================ -->
+    <div id="alarmOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 0, 0, 0.85); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px;">
+        <div style="background: #1a1f2b; border-radius: 32px; padding: 40px 30px; max-width: 400px; width: 100%; text-align: center; border: 3px solid #ff4757; box-shadow: 0 0 60px rgba(255, 71, 87, 0.4);">
+            <p style="font-size: 64px; margin-bottom: 10px;">⏰</p>
+            <h2 style="color: #ff4757; font-size: 28px; margin-bottom: 8px;">TIME TO TAKE!</h2>
+            <p id="alarmMedicineName" style="color: #ffffff; font-size: 32px; font-weight: 700; margin-bottom: 20px;">Insulin</p>
+            <p style="color: #8892a8; font-size: 16px; margin-bottom: 24px;">Please take your medicine now.</p>
+            <button onclick="takeMedicine()" style="padding: 18px 40px; border: none; border-radius: 50px; background: linear-gradient(135deg, #00d2d3, #01a3a4); color: #ffffff; font-size: 24px; font-weight: 700; cursor: pointer; width: 100%; box-shadow: 0 8px 30px rgba(0, 210, 211, 0.3); transition: 0.3s;">✅ I TOOK IT</button>
+            <p style="color: #2a3140; font-size: 12px; margin-top: 16px;">Your phone is vibrating 🔔</p>
+        </div>
+    </div>
+
+</body>
+</html>

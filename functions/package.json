@@ -1,0 +1,13 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for Medi-Minder",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^11.8.0",
+    "firebase-functions": "^4.3.1"
+  },
+  "private": true,
+  "engines": {
+    "node": "18"
+  }
+}

@@ -1,0 +1,436 @@
+/* =========================================================
+   Medi-Minder — style.css
+   Design: Clean medical-tech feel with a calming teal palette.
+   Signature: Pill-capsule shaped cards with a soft glow on focus.
+   ========================================================= */
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Design Tokens --- */
+:root {
+  --clr-bg:         #F0F6F9;
+  --clr-surface:    #FFFFFF;
+  --clr-primary:    #1A8C82;      /* teal */
+  --clr-primary-dk: #136B63;
+  --clr-accent:     #F4A836;      /* warm amber — pill bottle cap */
+  --clr-danger:     #E05252;
+  --clr-text:       #1C2B30;
+  --clr-muted:      #6B8491;
+  --clr-border:     #D6E6ED;
+  --clr-taken-bg:   #E6F6F4;
+  --clr-taken-txt:  #1A8C82;
+  --clr-pending-bg: #FEF5E4;
+  --clr-pending-txt:#C47D0A;
+
+  --radius-pill:    999px;
+  --radius-card:    16px;
+  --radius-input:   12px;
+
+  --shadow-sm:      0 2px 8px rgba(26,140,130,0.08);
+  --shadow-md:      0 4px 20px rgba(26,140,130,0.14);
+  --shadow-focus:   0 0 0 3px rgba(26,140,130,0.25);
+
+  --font-body:      'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg:   1.125rem;
+  --font-size-xl:   1.375rem;
+  --font-size-2xl:  1.75rem;
+
+  --transition: 0.2s ease;
+}
+
+/* --- Global --- */
+html {
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--clr-bg);
+  color: var(--clr-text);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px 48px;
+}
+
+/* --- App Container --- */
+.app-container {
+  background: var(--clr-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 480px;
+  animation: slideUp 0.35s ease both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* --- Header --- */
+.app-container > h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--clr-primary);
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin-top: 4px;
+  font-size: var(--font-size-sm);
+  color: var(--clr-muted);
+  letter-spacing: 0.02em;
+}
+
+/* --- Input Group --- */
+.input-group {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input-group input[type="text"],
+.input-group input[type="time"] {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-input);
+  font-size: var(--font-size-base);
+  font-family: var(--font-body);
+  color: var(--clr-text);
+  background: var(--clr-bg);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-group input[type="text"]::placeholder {
+  color: var(--clr-muted);
+}
+
+.input-group input:focus {
+  border-color: var(--clr-primary);
+  box-shadow: var(--shadow-focus);
+  background: #fff;
+}
+
+/* Time input icon color (WebKit) */
+.input-group input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(40%) sepia(80%) saturate(400%) hue-rotate(150deg);
+  cursor: pointer;
+}
+
+/* --- Add Button --- */
+.btn-add {
+  width: 100%;
+  padding: 15px 20px;
+  background: var(--clr-primary);
+  color: #fff;
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  font-family: var(--font-body);
+  border: none;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 4px 14px rgba(26,140,130,0.30);
+}
+
+.btn-add:hover {
+  background: var(--clr-primary-dk);
+  box-shadow: 0 6px 18px rgba(26,140,130,0.38);
+}
+
+.btn-add:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(26,140,130,0.20);
+}
+
+.btn-add:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* --- Section Title --- */
+.section-title {
+  margin-top: 36px;
+  margin-bottom: 14px;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--clr-muted);
+}
+
+/* --- Reminder List --- */
+#reminderList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- Reminder Card --- */
+.reminder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-card);
+  background: var(--clr-surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition), box-shadow var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Signature: teal left-accent stripe */
+.reminder-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--clr-primary);
+  border-radius: 4px 0 0 4px;
+}
+
+.reminder-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* --- Reminder Info --- */
+.reminder-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 8px;        /* clear of accent stripe */
+  min-width: 0;             /* allow text truncation */
+}
+
+.reminder-name {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--clr-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reminder-time {
+  font-size: var(--font-size-sm);
+  color: var(--clr-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Status Badge --- */
+.status-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  /* default = pending */
+  background: var(--clr-pending-bg);
+  color: var(--clr-pending-txt);
+}
+
+/* When Firebase marks as taken — add class "taken" to the item or badge */
+.status-badge.taken,
+.reminder-item.taken .status-badge {
+  background: var(--clr-taken-bg);
+  color: var(--clr-taken-txt);
+}
+
+/* Badge variants by content (progressive enhancement) */
+.status-badge:has-text("Taken"),
+.status-badge[data-status="taken"] {
+  background: var(--clr-taken-bg);
+  color: var(--clr-taken-txt);
+}
+
+/* --- Delete / Action Button inside card (optional Firebase hook) --- */
+.btn-delete {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--clr-muted);
+  font-size: 1.1rem;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color var(--transition), background var(--transition);
+}
+
+.btn-delete:hover {
+  color: var(--clr-danger);
+  background: rgba(224,82,82,0.08);
+}
+
+/* --- Footer Note --- */
+.footer-note {
+  margin-top: 28px;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--clr-muted);
+  border-top: 1px solid var(--clr-border);
+  padding-top: 18px;
+  letter-spacing: 0.02em;
+}
+
+/* --- Empty State (add via JS when list is empty) --- */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--clr-muted);
+}
+
+.empty-state .empty-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.empty-state p {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+/* --- Toast Notification (for Firebase success feedback) --- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--clr-text);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  z-index: 999;
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* --- Responsive: Tablet (480–768px) --- */
+@media (min-width: 480px) {
+  body {
+    padding: 40px 24px 64px;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .app-container {
+    padding: 40px 36px;
+  }
+
+  .app-container > h1 {
+    font-size: 2rem;
+  }
+
+  .input-group {
+    /* Side-by-side inputs on wider screens */
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 12px;
+  }
+
+  .input-group input[type="text"] {
+    grid-column: 1 / 2;
+  }
+
+  .input-group input[type="time"] {
+    grid-column: 2 / 3;
+    width: auto;
+    min-width: 130px;
+  }
+
+  .btn-add {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Responsive: Large screens (768px+) --- */
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 520px;
+  }
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- Dark Mode (system preference) --- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --clr-bg:         #0F1E22;
+    --clr-surface:    #182830;
+    --clr-border:     #243840;
+    --clr-text:       #E8F3F5;
+    --clr-muted:      #6B99A8;
+    --clr-taken-bg:   #0D2E2B;
+    --clr-pending-bg: #2A2010;
+  }
+
+  .input-group input[type="text"],
+  .input-group input[type="time"] {
+    background: #0F1E22;
+    color: var(--clr-text);
+  }
+
+  .input-group input:focus {
+    background: #182830;
+  }
+}
+
+/* ALARM OVERLAY */
+#alarmOverlay {
+    display: none !important; /* Hidden by default */
+    animation: alarmPulse 1s infinite alternate;
+}
+
+#alarmOverlay[style*="display: flex"] {
+    display: flex !important;
+}
+
+@keyframes alarmPulse {
+    0% { background: rgba(255, 0, 0, 0.7); }
+    100% { background: rgba(200, 0, 0, 0.95); }
+}
