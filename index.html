@@ -5,63 +5,188 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Medi-Minder</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDKs -->
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> <!-- NEW -->
 
     <!-- Initialize Firebase -->
     <script>
         const firebaseConfig = {
-          apiKey: "AIzaSyAgpOQC70HYv9a7lQB6OxBc6Bd5oYPXNUE",
-          authDomain: "medi-minder-app-cffa9.firebaseapp.com",
-          databaseURL: "https://medi-minder-app-cffa9-default-rtdb.firebaseio.com",
-          projectId: "medi-minder-app-cffa9",
-          storageBucket: "medi-minder-app-cffa9.firebasestorage.app",
-          messagingSenderId: "1050980841512",
-          appId: "1:1050980841512:web:ee8b5a4811cbc79d119d1d",
-          measurementId: "G-90CYTT2HCK"
+            apiKey: "AIzaSyAgpOQC70HYv9a7lQB6OxBc6Bd5oYPXNUE",
+            authDomain: "medi-minder-app-cffa9.firebaseapp.com",
+            databaseURL: "https://medi-minder-app-cffa9-default-rtdb.firebaseio.com",
+            projectId: "medi-minder-app-cffa9",
+            storageBucket: "medi-minder-app-cffa9.firebasestorage.app",
+            messagingSenderId: "1050980841512",
+            appId: "1:1050980841512:web:ee8b5a4811cbc79d119d1d",
+            measurementId: "G-90CYTT2HCK"
         };
         firebase.initializeApp(firebaseConfig);
     </script>
-
 </head>
 <body>
-    <div class="app-container">
+
+    <!-- ========================================================= -->
+    <!-- AUTH CONTAINER (Shown when user is NOT logged in)         -->
+    <!-- ========================================================= -->
+    <div id="authContainer" class="app-container" style="display: none;">
         <h1>💊 Medi-Minder</h1>
-        <p class="subtitle">Never miss a dose again.</p>
-
-        <!-- FORM -->
+        <p class="subtitle">Login or Sign Up to manage your medicines</p>
+        
         <div class="input-group">
-            <input type="text" id="medicineName" placeholder="Medicine name (e.g. Insulin)" />
+            <input type="email" id="emailInput" placeholder="Email address" />
+            <input type="password" id="passwordInput" placeholder="Password" />
             
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="time" id="medicineTime" value="08:00" style="flex: 1;" />
-                <button onclick="addTimeSlot()" style="padding: 16px 18px; border: none; border-radius: 16px; background: #2a3140; color: #4facfe; font-weight: 700; cursor: pointer;">➕ Add Time</button>
-            </div>
+            <button class="btn-add" onclick="signUp()">📝 Sign Up</button>
+            <button class="btn-add" onclick="signIn()" style="background: #2a3140; color: #4facfe; margin-top: 8px;">🔑 Login</button>
             
-            <div id="timeSlotList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
-                <span style="color: #2a3140; font-size: 14px;">No times added yet. Add a time above.</span>
-            </div>
-            
-            <button class="btn-add" onclick="saveMedicine()">➕ Add Reminder</button>
+            <p style="color: #8892a8; font-size: 14px; text-align: center; margin-top: 12px;">
+                Demo: Use any email/password to test
+            </p>
         </div>
+    </div>
 
-        <!-- REMINDER LIST -->
-        <div class="section-title">📋 Your Reminders</div>
-        <div id="reminderList">
-            <div class="empty-state">
-                <p style="font-size: 48px; margin-bottom: 12px;">💊</p>
-                <p style="font-size: 16px; color: #8892a8;">No reminders added yet.</p>
-                <p style="font-size: 14px; color: #2a3140;">Add your first medicine above!</p>
+    <!-- ========================================================= -->
+    <!-- APP CONTAINER (Shown when user IS logged in)              -->
+    <!-- ========================================================= -->
+    <div id="appContainer" style="display: none;">
+        <div class="app-container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>💊 Medi-Minder</h1>
+                <button onclick="signOut()" style="padding: 8px 16px; border: none; border-radius: 12px; background: #2a3140; color: #ff4757; font-weight: 600; cursor: pointer; font-size: 14px;">🚪 Logout</button>
             </div>
-        </div>
+            <p class="subtitle">Never miss a dose again.</p>
 
-        <div class="footer-note">Tap ✏️ to edit • 🗑️ to delete</div>
+            <!-- FORM -->
+            <div class="input-group">
+                <input type="text" id="medicineName" placeholder="Medicine name (e.g. Insulin)" />
+                
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="time" id="medicineTime" value="08:00" style="flex: 1;" />
+                    <button onclick="addTimeSlot()" style="padding: 16px 18px; border: none; border-radius: 16px; background: #2a3140; color: #4facfe; font-weight: 700; cursor: pointer;">➕ Add Time</button>
+                </div>
+                
+                <div id="timeSlotList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+                    <span style="color: #2a3140; font-size: 14px;">No times added yet. Add a time above.</span>
+                </div>
+                
+                <button class="btn-add" onclick="saveMedicine()">➕ Add Reminder</button>
+            </div>
+
+            <!-- REMINDER LIST -->
+            <div class="section-title">📋 Your Reminders</div>
+            <div id="reminderList">
+                <div class="empty-state">
+                    <p style="font-size: 48px; margin-bottom: 12px;">💊</p>
+                    <p style="font-size: 16px; color: #8892a8;">No reminders added yet.</p>
+                    <p style="font-size: 14px; color: #2a3140;">Add your first medicine above!</p>
+                </div>
+            </div>
+
+            <div class="footer-note">Tap ✏️ to edit • 🗑️ to delete</div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- ALARM OVERLAY (Hidden by default)                         -->
+    <!-- ========================================================= -->
+    <div id="alarmOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 0, 0, 0.85); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px;">
+        <div style="background: #1a1f2b; border-radius: 32px; padding: 40px 30px; max-width: 400px; width: 100%; text-align: center; border: 3px solid #ff4757; box-shadow: 0 0 60px rgba(255, 71, 87, 0.4);">
+            <p style="font-size: 64px; margin-bottom: 10px;">⏰</p>
+            <h2 style="color: #ff4757; font-size: 28px; margin-bottom: 8px;">TIME TO TAKE!</h2>
+            <p id="alarmMedicineName" style="color: #ffffff; font-size: 32px; font-weight: 700; margin-bottom: 20px;">Insulin</p>
+            <p style="color: #8892a8; font-size: 16px; margin-bottom: 24px;">Please take your medicine now.</p>
+            <button onclick="takeMedicine()" style="padding: 18px 40px; border: none; border-radius: 50px; background: linear-gradient(135deg, #00d2d3, #01a3a4); color: #ffffff; font-size: 24px; font-weight: 700; cursor: pointer; width: 100%; box-shadow: 0 8px 30px rgba(0, 210, 211, 0.3); transition: 0.3s;">✅ I TOOK IT</button>
+            <p style="color: #2a3140; font-size: 12px; margin-top: 16px;">Your phone is vibrating 🔔</p>
+        </div>
     </div>
 
     <script>
+        // ============================================================
+        // SECTION 0: FIREBASE AUTHENTICATION
+        // ============================================================
+
+        // Get current user's UID
+        function getCurrentUserUID() {
+            const user = firebase.auth().currentUser;
+            return user ? user.uid : null;
+        }
+
+        // Sign Up
+        function signUp() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            
+            if (!email || !password) {
+                alert('Please enter both email and password!');
+                return;
+            }
+            
+            firebase.auth().createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    console.log('User signed up:', userCredential.user.uid);
+                })
+                .catch(error => {
+                    alert('Sign Up Error: ' + error.message);
+                });
+        }
+
+        // Sign In
+        function signIn() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            
+            if (!email || !password) {
+                alert('Please enter both email and password!');
+                return;
+            }
+            
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    console.log('User signed in:', userCredential.user.uid);
+                })
+                .catch(error => {
+                    alert('Login Error: ' + error.message);
+                });
+        }
+
+        // Sign Out
+        function signOut() {
+            firebase.auth().signOut().then(() => {
+                console.log('User signed out');
+                // Reload the page to show auth screen
+                window.location.reload();
+            }).catch(error => {
+                alert('Sign Out Error: ' + error.message);
+            });
+        }
+
+        // Show/Hide UI based on auth state
+        function showApp() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            renderReminderList();
+            startScheduler();
+            requestNotificationPermission();
+        }
+
+        function showAuth() {
+            document.getElementById('authContainer').style.display = 'block';
+            document.getElementById('appContainer').style.display = 'none';
+        }
+
+        // Auth state listener
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                showApp();
+            } else {
+                showAuth();
+            }
+        });
+
         // ============================================================
         // SECTION 1: TIME SLOT MANAGEMENT
         // ============================================================
@@ -114,21 +239,21 @@
         }
 
         // ============================================================
-        // FIREBASE STORAGE HELPERS (Replaces localStorage)
+        // SECTION 2: FIREBASE STORAGE HELPERS (USER-SPECIFIC)
         // ============================================================
 
-        // Fetches all medicines from Firebase
+        // Fetches all medicines for the current user
         function getMedicines() {
-            // We'll change this to use a real-time listener later
-            // For now, we'll fetch data once.
+            const uid = getCurrentUserUID();
+            if (!uid) return Promise.resolve([]);
+            
             return new Promise((resolve) => {
-                const medicinesRef = firebase.database().ref('medicines');
+                const medicinesRef = firebase.database().ref(`medicines/${uid}`);
                 medicinesRef.once('value', (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
-                        // Firebase returns an object with keys. Convert to an array.
                         const medicinesArray = Object.keys(data).map(key => ({
-                            id: parseInt(key), // Use the Firebase key as the ID
+                            id: parseInt(key),
                             ...data[key]
                         }));
                         resolve(medicinesArray);
@@ -139,9 +264,11 @@
             });
         }
 
-        // Saves the entire medicines list to Firebase
+        // Saves the entire medicines list for the current user
         function saveMedicines(medicines) {
-            // Sanitize: Ensure every medicine has a lastTakenDate
+            const uid = getCurrentUserUID();
+            if (!uid) return Promise.reject('No user logged in');
+            
             const sanitizedMedicines = medicines.map(med => {
                 return {
                     ...med,
@@ -150,7 +277,6 @@
                 };
             });
 
-            // Convert array back to an object with keys as IDs
             const medicinesObject = {};
             sanitizedMedicines.forEach(med => {
                 medicinesObject[med.id] = {
@@ -161,7 +287,7 @@
                 };
             });
             
-            return firebase.database().ref('medicines').set(medicinesObject);
+            return firebase.database().ref(`medicines/${uid}`).set(medicinesObject);
         }
 
         // ============================================================
@@ -221,28 +347,30 @@
             }
         }
 
-        
         // ============================================================
-        // RENDER REMINDER LIST (Now with real-time updates!)
+        // SECTION 4: RENDER REMINDER LIST (USER-SPECIFIC)
         // ============================================================
         function renderReminderList() {
             const container = document.getElementById('reminderList');
             
-            // Set up a real-time listener
-            const medicinesRef = firebase.database().ref('medicines');
+            const uid = getCurrentUserUID();
+            if (!uid) {
+                container.innerHTML = '<p style="color: #8892a8;">Please log in to view reminders.</p>';
+                return;
+            }
+            
+            const medicinesRef = firebase.database().ref(`medicines/${uid}`);
             medicinesRef.on('value', (snapshot) => {
                 const data = snapshot.val();
                 let medicines = [];
                 
                 if (data) {
-                    // Convert Firebase object to an array
                     medicines = Object.keys(data).map(key => ({
                         id: parseInt(key),
                         ...data[key]
                     }));
                 }
 
-                // --- Your existing rendering logic starts here ---
                 if (medicines.length === 0) {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -284,57 +412,57 @@
         // SECTION 5: SAVE MEDICINE (Create & Update)
         // ============================================================
         async function saveMedicine() {
-              const name = document.getElementById('medicineName').value.trim();
-              if (!name) {
-                  alert('Please enter a medicine name!');
-                  return;
-              }
-              if (currentTimes.length === 0) {
-                  alert('Please add at least one time for this medicine!');
-                  return;
-              }
+            const name = document.getElementById('medicineName').value.trim();
+            if (!name) {
+                alert('Please enter a medicine name!');
+                return;
+            }
+            if (currentTimes.length === 0) {
+                alert('Please add at least one time for this medicine!');
+                return;
+            }
 
-              const medicines = await getMedicines();
-              
-              if (editingId !== null) {
-                  const index = medicines.findIndex(m => m.id === editingId);
-                  if (index === -1) {
-                      alert('Error: Medicine not found!');
-                      cancelEdit();
-                      return;
-                  }
-                  medicines[index].name = name;
-                  medicines[index].times = [...currentTimes];
-                  await saveMedicines(medicines);
-                  cancelEdit();
-                  alert('✅ Medicine updated successfully!');
-              } else {
-                  const newMedicine = {
-                      id: Date.now(),
-                      name: name,
-                      times: [...currentTimes],
-                      takenToday: false,
-                      lastTakenDate: null
-                  };
-                  medicines.push(newMedicine);
-                  await saveMedicines(medicines);
-                  currentTimes = [];
-                  renderTimeSlots();
-                  document.getElementById('medicineName').value = '';
-                  document.getElementById('medicineTime').value = '08:00';
-                  alert(`✅ Reminder added for ${name} at ${newMedicine.times.length} time(s)!`);
-              }
-              
-              renderReminderList();
-          }
+            const medicines = await getMedicines();
+            
+            if (editingId !== null) {
+                const index = medicines.findIndex(m => m.id === editingId);
+                if (index === -1) {
+                    alert('Error: Medicine not found!');
+                    cancelEdit();
+                    return;
+                }
+                medicines[index].name = name;
+                medicines[index].times = [...currentTimes];
+                await saveMedicines(medicines);
+                cancelEdit();
+                alert('✅ Medicine updated successfully!');
+            } else {
+                const newMedicine = {
+                    id: Date.now(),
+                    name: name,
+                    times: [...currentTimes],
+                    takenToday: false,
+                    lastTakenDate: null
+                };
+                medicines.push(newMedicine);
+                await saveMedicines(medicines);
+                currentTimes = [];
+                renderTimeSlots();
+                document.getElementById('medicineName').value = '';
+                document.getElementById('medicineTime').value = '08:00';
+                alert(`✅ Reminder added for ${name} at ${newMedicine.times.length} time(s)!`);
+            }
+            
+            renderReminderList();
+        }
 
         // ============================================================
-        // SECTION 6: DAILY RESET & SCHEDULER (NEW)
+        // SECTION 6: DAILY RESET & SCHEDULER
         // ============================================================
         let alarmInterval = null;
 
         async function resetDailyStatus() {
-            const medicines = await getMedicines(); // <-- Added 'await'
+            const medicines = await getMedicines();
             const today = new Date().toISOString().split('T')[0];
             let changed = false;
 
@@ -347,15 +475,15 @@
             });
 
             if (changed) {
-                await saveMedicines(medicines); // <-- Added 'await' here too
+                await saveMedicines(medicines);
                 renderReminderList();
             }
         }
 
         async function checkReminders() {
-            await resetDailyStatus(); // <-- Added 'await'
+            await resetDailyStatus();
 
-            const medicines = await getMedicines(); // <-- Added 'await'
+            const medicines = await getMedicines();
             const now = new Date();
             const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
@@ -402,13 +530,13 @@
                 return;
             }
 
-            const medicines = await getMedicines(); // <-- Added 'await' here
+            const medicines = await getMedicines();
             const med = medicines.find(m => m.id === id);
             
             if (med) {
                 med.takenToday = true;
                 med.lastTakenDate = new Date().toISOString().split('T')[0];
-                await saveMedicines(medicines); // <-- Added 'await' here too
+                await saveMedicines(medicines);
                 renderReminderList();
             }
 
@@ -424,7 +552,7 @@
                 alarmInterval = null;
             }
             if (window.speechSynthesis) {
-                window.speechSynthesis.cancel(); // <-- Stop speaking immediately
+                window.speechSynthesis.cancel();
             }
             window.alertingMedicineId = null;
         }
@@ -434,11 +562,10 @@
             setTimeout(checkReminders, 1000);
         }
 
-                // ============================================================
-        // SECTION 6.5: FIREBASE PUSH NOTIFICATIONS (NEW)
+        // ============================================================
+        // SECTION 7: FIREBASE PUSH NOTIFICATIONS (with user UID)
         // ============================================================
 
-        // Function to request permission and get the FCM token
         function requestNotificationPermission() {
             console.log('Requesting notification permission...');
             Notification.requestPermission().then((permission) => {
@@ -451,34 +578,32 @@
             });
         }
 
-        // Function to get the FCM token
         function getFCMPushToken() {
-            // Check if the browser supports service workers and the Push API
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 console.warn('Push notifications are not supported by this browser.');
                 return;
             }
 
             const messaging = firebase.messaging();
-
-            // Get the registration token
-            // !!! IMPORTANT: Replace 'YOUR_VAPID_KEY' with the key you generated !!!
-            messaging.getToken({ vapidKey: 'BIISWndTkZ9XHt_eCadIQ0sbuRSq6XOb9Q0lVXwxgQ-soqUR9vG6AbWhVX9q8Izc2IbX1jH0Mn54_yeJPcy1Sbc' }).then((currentToken) => {
-                if (currentToken) {
-                    console.log('FCM Token:', currentToken);
-                    // Save the token to Firebase Database
-                    saveTokenToDatabase(currentToken);
-                } else {
-                    console.log('No registration token available. Request permission to generate one.');
-                }
-            }).catch((err) => {
-                console.log('An error occurred while retrieving token. ', err);
-            });
+            messaging.getToken({ vapidKey: 'BIISWndTkZ9XHt_eCadIQ0sbuRSq6XOb9Q0lVXwxgQ-soqUR9vG6AbWhVX9q8Izc2IbX1jH0Mn54_yeJPcy1Sbc' })
+                .then((currentToken) => {
+                    if (currentToken) {
+                        console.log('FCM Token:', currentToken);
+                        saveTokenToDatabase(currentToken);
+                    } else {
+                        console.log('No registration token available.');
+                    }
+                })
+                .catch((err) => {
+                    console.log('An error occurred while retrieving token. ', err);
+                });
         }
 
-        // Save the token to Firebase Database (so you can send notifications later)
+        // Save token under the user's UID
         function saveTokenToDatabase(token) {
-            firebase.database().ref('fcmTokens').push({
+            const uid = getCurrentUserUID();
+            if (!uid) return;
+            firebase.database().ref(`fcmTokens/${uid}`).push({
                 token: token,
                 userAgent: navigator.userAgent,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -486,7 +611,7 @@
         }
 
         // ============================================================
-        // SECTION 7: EXPOSE FUNCTIONS GLOBALLY
+        // SECTION 8: EXPOSE FUNCTIONS GLOBALLY
         // ============================================================
         window.getMedicines = getMedicines;
         window.saveMedicines = saveMedicines;
@@ -500,32 +625,25 @@
         window.takeMedicine = takeMedicine;
         window.dismissAlert = dismissAlert;
         window.checkReminders = checkReminders;
+        window.signUp = signUp;
+        window.signIn = signIn;
+        window.signOut = signOut;
 
         // ============================================================
-        // SECTION 8: INITIALIZE APP
+        // SECTION 9: INITIALIZE APP
         // ============================================================
-                // ============================================================
-        // SECTION 8: INITIALIZE APP
-        // ============================================================
-        renderReminderList();   
-        startScheduler();
+        // The auth listener will handle showing the app after login.
+        // But we need to start the scheduler and request permissions only after login.
+        // This is already handled in showApp() which is called on auth state change.
+        // So we don't call renderReminderList() or startScheduler() here.
+        // They are called inside showApp().
+        // However, we need to start the auth listener which is already set up above.
 
-        // Request notification permission on page load
-        requestNotificationPermission();   
+        // Also, we need to ensure that the alarm overlay is hidden initially.
+        // It's already hidden by default.
+
+        // The app will now show the auth screen first, then the app after login.
+        console.log('Medi-Minder initialized with Firebase Authentication.');
     </script>
-        <!-- ============================================ -->
-    <!-- ALARM OVERLAY (Hidden by default)            -->
-    <!-- ============================================ -->
-    <div id="alarmOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 0, 0, 0.85); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px;">
-        <div style="background: #1a1f2b; border-radius: 32px; padding: 40px 30px; max-width: 400px; width: 100%; text-align: center; border: 3px solid #ff4757; box-shadow: 0 0 60px rgba(255, 71, 87, 0.4);">
-            <p style="font-size: 64px; margin-bottom: 10px;">⏰</p>
-            <h2 style="color: #ff4757; font-size: 28px; margin-bottom: 8px;">TIME TO TAKE!</h2>
-            <p id="alarmMedicineName" style="color: #ffffff; font-size: 32px; font-weight: 700; margin-bottom: 20px;">Insulin</p>
-            <p style="color: #8892a8; font-size: 16px; margin-bottom: 24px;">Please take your medicine now.</p>
-            <button onclick="takeMedicine()" style="padding: 18px 40px; border: none; border-radius: 50px; background: linear-gradient(135deg, #00d2d3, #01a3a4); color: #ffffff; font-size: 24px; font-weight: 700; cursor: pointer; width: 100%; box-shadow: 0 8px 30px rgba(0, 210, 211, 0.3); transition: 0.3s;">✅ I TOOK IT</button>
-            <p style="color: #2a3140; font-size: 12px; margin-top: 16px;">Your phone is vibrating 🔔</p>
-        </div>
-    </div>
-
 </body>
 </html>
