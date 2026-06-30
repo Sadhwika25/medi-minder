@@ -1,0 +1,32 @@
+# Node modules
+node_modules/
+functions/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Firebase service account keys (sensitive!)
+*.json
+!package.json
+!package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Firebase files
+firebase-debug.log
+firebase-debug.*.log
+
+# Vercel
+.vercel/
