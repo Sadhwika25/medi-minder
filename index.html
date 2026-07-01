@@ -11,6 +11,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> <!-- NEW -->
+    <!-- ========================================================= -->
+    <!-- YOUR STORAGE FILE (Offline-first)                         -->
+    <!-- ========================================================= -->
+    <script src="js/storage.js"></script>
+
+    <!-- LocalForage: Simple async storage for IndexedDB -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 
     <!-- Initialize Firebase -->
     <script>
@@ -245,53 +252,7 @@
         // ============================================================
 
         // Fetches all medicines for the current user
-        function getMedicines() {
-            const uid = getCurrentUserUID();
-            if (!uid) return Promise.resolve([]);
-            
-            return new Promise((resolve) => {
-                const medicinesRef = firebase.database().ref(`medicines/${uid}`);
-                medicinesRef.once('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        const medicinesArray = Object.keys(data).map(key => ({
-                            id: parseInt(key),
-                            ...data[key]
-                        }));
-                        resolve(medicinesArray);
-                    } else {
-                        resolve([]);
-                    }
-                });
-            });
-        }
-
-        // Saves the entire medicines list for the current user
-        function saveMedicines(medicines) {
-            const uid = getCurrentUserUID();
-            if (!uid) return Promise.reject('No user logged in');
-            
-            const sanitizedMedicines = medicines.map(med => {
-                return {
-                    ...med,
-                    lastTakenDate: med.lastTakenDate !== undefined ? med.lastTakenDate : null,
-                    takenToday: med.takenToday !== undefined ? med.takenToday : false
-                };
-            });
-
-            const medicinesObject = {};
-            sanitizedMedicines.forEach(med => {
-                medicinesObject[med.id] = {
-                    name: med.name,
-                    times: med.times,
-                    takenToday: med.takenToday,
-                    lastTakenDate: med.lastTakenDate
-                };
-            });
-            
-            return firebase.database().ref(`medicines/${uid}`).set(medicinesObject);
-        }
-
+        
         // ============================================================
         // SECTION 3: DELETE & EDIT FUNCTIONS
         // ============================================================
@@ -352,62 +313,46 @@
         // ============================================================
         // SECTION 4: RENDER REMINDER LIST (USER-SPECIFIC)
         // ============================================================
-        function renderReminderList() {
+        async function renderReminderList() {
             const container = document.getElementById('reminderList');
             
-            const uid = getCurrentUserUID();
-            if (!uid) {
-                container.innerHTML = '<p style="color: #8892a8;">Please log in to view reminders.</p>';
+            // Get data from IndexedDB (instantly!)
+            const medicines = await getLocalMedicines();  // <-- Uses IndexedDB
+            
+            if (medicines.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p style="font-size: 48px; margin-bottom: 12px;">💊</p>
+                        <p style="font-size: 16px; color: #8892a8;">No reminders added yet.</p>
+                        <p style="font-size: 14px; color: #2a3140;">Add your first medicine above!</p>
+                    </div>
+                `;
                 return;
             }
             
-            const medicinesRef = firebase.database().ref(`medicines/${uid}`);
-            medicinesRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                let medicines = [];
+            container.innerHTML = medicines.map(med => {
+                const timesDisplay = med.times.map(t => {
+                    const hour = parseInt(t.split(':')[0]);
+                    const min = t.split(':')[1];
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const displayHour = hour % 12 || 12;
+                    return `${displayHour}:${min} ${ampm}`;
+                }).join(', ');
                 
-                if (data) {
-                    medicines = Object.keys(data).map(key => ({
-                        id: parseInt(key),
-                        ...data[key]
-                    }));
-                }
-
-                if (medicines.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <p style="font-size: 48px; margin-bottom: 12px;">💊</p>
-                            <p style="font-size: 16px; color: #8892a8;">No reminders added yet.</p>
-                            <p style="font-size: 14px; color: #2a3140;">Add your first medicine above!</p>
+                return `
+                    <div class="reminder-item">
+                        <div class="reminder-info">
+                            <span class="reminder-name">${med.name}</span>
+                            <span class="reminder-time">${timesDisplay}</span>
                         </div>
-                    `;
-                    return;
-                }
-                
-                container.innerHTML = medicines.map(med => {
-                    const timesDisplay = med.times.map(t => {
-                        const hour = parseInt(t.split(':')[0]);
-                        const min = t.split(':')[1];
-                        const ampm = hour >= 12 ? 'PM' : 'AM';
-                        const displayHour = hour % 12 || 12;
-                        return `${displayHour}:${min} ${ampm}`;
-                    }).join(', ');
-                    
-                    return `
-                        <div class="reminder-item">
-                            <div class="reminder-info">
-                                <span class="reminder-name">${med.name}</span>
-                                <span class="reminder-time">${timesDisplay}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="status-badge">${med.takenToday ? '✅ Taken' : '⏳ Pending'}</span>
-                                <span onclick="editMedicine(${med.id})" style="cursor: pointer; color: #4facfe; font-size: 18px;">✏️</span>
-                                <span onclick="deleteMedicine(${med.id})" style="cursor: pointer; color: #ff4757; font-size: 18px;">🗑️</span>
-                            </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="status-badge">${med.takenToday ? '✅ Taken' : '⏳ Pending'}</span>
+                            <span onclick="editMedicine(${med.id})" style="cursor: pointer; color: #4facfe; font-size: 18px;">✏️</span>
+                            <span onclick="deleteMedicine(${med.id})" style="cursor: pointer; color: #ff4757; font-size: 18px;">🗑️</span>
                         </div>
-                    `;
-                }).join('');
-            });
+                    </div>
+                `;
+            }).join('');
         }
 
         // ============================================================
@@ -629,8 +574,7 @@
         // ============================================================
         // SECTION 8: EXPOSE FUNCTIONS GLOBALLY
         // ============================================================
-        window.getMedicines = getMedicines;
-        window.saveMedicines = saveMedicines;
+        
         window.renderReminderList = renderReminderList;
         window.saveMedicine = saveMedicine;
         window.addTimeSlot = addTimeSlot;
